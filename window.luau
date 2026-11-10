@@ -764,10 +764,7 @@ local function send_text(cx, pane: number, text: string)
 	elseif d then
 		error("Close the open dialog in Tern first", 0)
 	elseif slash then
-		if e.draft then
-			error("The composer has unsent text", 0)
-		end
-		cx:run(pane, text .. "\r")
+		cx:run(pane, (if e.draft then "\x03" else "") .. text .. "\r")
 	else
 		local ok, err = pcall(function()
 			cx.agents:ask(pane, text)
