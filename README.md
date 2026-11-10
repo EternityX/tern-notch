@@ -41,13 +41,13 @@ first load, so it needs macOS 14 or later and the Xcode Command Line Tools
 (`xcode-select --install`). Then:
 
 ```sh
-tern plugin install github.com/<you>/tern-notch
+tern plugin install github.com/EternityX/tern-notch
 ```
 
 or, to load a clone in place and reload on every save:
 
 ```sh
-git clone https://github.com/<you>/tern-notch
+git clone https://github.com/EternityX/tern-notch
 tern plugin link tern-notch
 ```
 
