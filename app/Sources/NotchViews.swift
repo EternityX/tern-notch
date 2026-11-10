@@ -660,7 +660,7 @@ struct DialogView: View {
         VStack(spacing: 5) {
             ForEach(Array(list.items.enumerated()), id: \.element.id) { index, option in
                 OptionRow(option: option, index: index, pending: store.pending.contains(option.id)) {
-                    store.pick(option, in: list, agent: agent)
+                    if option.kind == "other" { store.composerFocusRequests += 1 } else { store.pick(option, in: list, agent: agent) }
                 }
             }
         }
@@ -820,6 +820,7 @@ struct Composer: View {
         .onChange(of: agent?.dialog?.kind) { _, kind in
             if ui.expanded, kind == "answer" { focusToken += 1 }
         }
+        .onChange(of: store.composerFocusRequests) { _, _ in focusToken += 1 }
     }
 
     private var trimmed: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }

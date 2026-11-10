@@ -12,6 +12,7 @@ final class Store: ObservableObject {
     @Published private(set) var pending: Set<String> = []
     @Published private(set) var catalog: Catalog?
     @Published var drafts: [Int: String] = [:]
+    @Published var composerFocusRequests = 0
     @Published var newModel: String? = UserDefaults.standard.string(forKey: "newModel") {
         didSet { UserDefaults.standard.set(newModel, forKey: "newModel") }
     }
