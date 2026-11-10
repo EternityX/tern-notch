@@ -21,6 +21,8 @@ fi
 rm -rf "$STAGE"
 mkdir -p "$STAGE/Contents/MacOS"
 cp app/Info.plist "$STAGE/Contents/Info.plist"
+mkdir -p "$STAGE/Contents/Resources"
+cp app/AppIcon.icns "$STAGE/Contents/Resources/AppIcon.icns"
 xcrun swiftc -O -swift-version 5 $FLAGS \
 	-target "$(uname -m)-apple-macos14.0" \
 	-o "$STAGE/Contents/MacOS/TernNotch" \
