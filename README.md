@@ -4,6 +4,8 @@ Your Tern agents in the MacBook notch.
 
 ![tern-notch](docs/screenshot.png)
 
+![A question answered from the notch](docs/question.png)
+
 - Activity bars while an agent works, a blinking dot when it asks a question.
 - Hover to open: answer questions, send messages, run slash commands with autocomplete.
 - Switch model and thinking effort; see the branch and diff.
