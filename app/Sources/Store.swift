@@ -172,6 +172,11 @@ final class Store: ObservableObject {
         NSRunningApplication.runningApplications(withBundleIdentifier: ternBundleID).first?.activate()
     }
 
+    func close(_ pane: Int) {
+        if selectedPane == pane { selectedPane = nil }
+        send("close", ["pane": pane])
+    }
+
     private func markPending(_ id: String) {
         pending.insert(id)
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in self?.pending.remove(id) }

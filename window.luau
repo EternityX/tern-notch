@@ -817,6 +817,8 @@ local function handle(cx, cmd)
 		end
 	elseif op == "focus" then
 		cx.layout:focus(require_agent(cx, cmd.pane))
+	elseif op == "close" then
+		cx.agents:stop(require_agent(cx, cmd.pane))
 	elseif op == "model" then
 		send_text(cx, require_agent(cx, cmd.pane), "/switch " .. selector(cmd.model))
 	elseif op == "effort" then

@@ -208,12 +208,13 @@ struct CollapsedBar: View {
 
 struct StatusGlyph: View {
     @ObservedObject var store: Store
+    var showsCount = true
 
     var body: some View {
         HStack(spacing: 5) {
             if store.workingCount > 0 {
                 WorkingBars(color: Tone.working)
-                if store.workingCount > 1 {
+                if showsCount, store.workingCount > 1 {
                     Text("\(store.workingCount)").font(.system(size: 11, weight: .semibold)).monospacedDigit()
                         .foregroundStyle(Tone.working)
                 }
@@ -331,7 +332,7 @@ struct ExpandedView: View {
     private var header: some View {
         HStack(spacing: 0) {
             HStack(spacing: 7) {
-                StatusGlyph(store: store)
+                StatusGlyph(store: store, showsCount: false)
                 Text(summary).font(.system(size: 12, weight: .semibold)).lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -369,50 +370,98 @@ struct Segment: Identifiable {
     var dot: Color? = nil
     var done = false
     var flagged = false
+    var closable = false
 }
 
 struct SegmentedTabs: View {
     let segments: [Segment]
     let selected: String?
     var fontSize: CGFloat = 12
+    var onClose: ((String) -> Void)? = nil
     let onSelect: (String) -> Void
+    @State private var confirming: String?
     @Namespace private var selection
 
     var body: some View {
         HStack(spacing: 2) {
             ForEach(segments) { segment in
                 let on = segment.id == selected
-                Button { withAnimation(Motion.content) { onSelect(segment.id) } } label: {
-                    HStack(spacing: 6) {
-                        if segment.done {
-                            Image(systemName: "checkmark").font(.system(size: fontSize - 3, weight: .bold))
-                                .foregroundStyle(Tone.idle)
-                        } else if let dot = segment.dot {
-                            Circle().fill(dot).frame(width: 7, height: 7)
-                                .shadow(color: dot.opacity(on ? 0.8 : 0), radius: 3)
+                HStack(spacing: 0) {
+                    Button { withAnimation(Motion.content) { onSelect(segment.id) } } label: {
+                        HStack(spacing: 6) {
+                            if segment.done {
+                                Image(systemName: "checkmark").font(.system(size: fontSize - 3, weight: .bold))
+                                    .foregroundStyle(Tone.idle)
+                            } else if let dot = segment.dot {
+                                Circle().fill(dot).frame(width: 7, height: 7)
+                                    .shadow(color: dot.opacity(on ? 0.8 : 0), radius: 3)
+                            }
+                            Text(segment.label).font(.system(size: fontSize, weight: on ? .semibold : .medium)).lineLimit(1)
+                            if segment.flagged {
+                                Circle().fill(Tone.waiting).frame(width: 5, height: 5)
+                            }
                         }
-                        Text(segment.label).font(.system(size: fontSize, weight: on ? .semibold : .medium)).lineLimit(1)
-                        if segment.flagged {
-                            Circle().fill(Tone.waiting).frame(width: 5, height: 5)
-                        }
+                        .padding(.leading, 12).padding(.trailing, on && segment.closable && onClose != nil ? 6 : 12)
+                        .padding(.vertical, 6)
+                        .contentShape(Capsule())
                     }
-                    .padding(.horizontal, 12).padding(.vertical, 6)
-                    .foregroundStyle(on ? Color.white : Color.white.opacity(0.6))
-                    .background {
-                        if on {
-                            Capsule().fill(Color.white.opacity(0.17))
-                                .overlay(Capsule().strokeBorder(Color.white.opacity(0.22), lineWidth: 0.5))
-                                .matchedGeometryEffect(id: "selection", in: selection)
-                        }
+                    .buttonStyle(.plain)
+                    if on, segment.closable, let onClose {
+                        closeButton(segment.id, onClose)
                     }
-                    .contentShape(Capsule())
                 }
-                .buttonStyle(.plain)
+                .foregroundStyle(on ? Color.white : Color.white.opacity(0.6))
+                .background {
+                    if on {
+                        Capsule().fill(Color.white.opacity(0.17))
+                            .overlay(Capsule().strokeBorder(Color.white.opacity(0.22), lineWidth: 0.5))
+                            .matchedGeometryEffect(id: "selection", in: selection)
+                    }
+                }
+                .contextMenu {
+                    if segment.closable, let onClose {
+                        Button("Close \(segment.label)", role: .destructive) { onClose(segment.id) }
+                    }
+                }
                 .id(segment.id)
             }
         }
         .padding(3)
         .controlSurface(Capsule(), fill: Color.white.opacity(0.06))
+        .onChange(of: selected) { _, _ in confirming = nil }
+    }
+
+    @ViewBuilder
+    private func closeButton(_ id: String, _ onClose: @escaping (String) -> Void) -> some View {
+        let armed = confirming == id
+        Button {
+            if armed {
+                confirming = nil
+                onClose(id)
+            } else {
+                withAnimation(Motion.content) { confirming = id }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    if confirming == id { withAnimation(Motion.content) { confirming = nil } }
+                }
+            }
+        } label: {
+            Group {
+                if armed {
+                    Text("Close?").font(.system(size: fontSize - 1, weight: .semibold))
+                        .padding(.horizontal, 7).padding(.vertical, 2)
+                        .background(Capsule().fill(Color.red.opacity(0.85)))
+                        .foregroundStyle(.white)
+                } else {
+                    Image(systemName: "xmark").font(.system(size: fontSize - 3, weight: .bold))
+                        .frame(width: 16, height: 16)
+                        .background(Circle().fill(Color.white.opacity(0.12)))
+                }
+            }
+            .padding(.trailing, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(armed ? "Click again to close this agent" : "Close this agent")
     }
 }
 
@@ -463,9 +512,10 @@ struct AgentTabs: View {
                 SegmentedTabs(
                     segments: store.agents.map {
                         Segment(id: String($0.pane), label: $0.shortTitle, dot: Tone.of($0),
-                                flagged: $0.needsInput && $0.pane != selected)
+                                flagged: $0.needsInput && $0.pane != selected, closable: true)
                     } + [Segment(id: String(Store.newAgent), label: "+ New")],
-                    selected: String(selected)
+                    selected: String(selected),
+                    onClose: { id in if let pane = Int(id) { store.close(pane) } }
                 ) { id in store.selectedPane = Int(id) }
                 .fixedSize()
             }
