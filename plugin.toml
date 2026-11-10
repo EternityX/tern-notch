@@ -1,0 +1,7 @@
+schema = 1
+id = "tern-notch"
+name = "Agent Notch"
+version = "0.1.0"
+description = "Agent status, usage and pending questions in the MacBook notch, with a prompt box for messages and slash commands."
+icon = "sparkle"
+window = "window.luau"
