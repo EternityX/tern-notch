@@ -902,6 +902,15 @@ tern.on("agent_finished", function()
 	dirty = true
 end)
 
+tern.route.open(function(req, cx)
+	if string.sub(req.path, 1, #INBOX + 1) ~= INBOX .. "/" then
+		return nil
+	end
+	pcall(poll_inbox, cx)
+	ticks = REFRESH_TICKS - 1
+	return { handled = true }
+end)
+
 local function launch(cx)
 	tern.process.run({ "/usr/bin/xattr", "-dr", "com.apple.quarantine", APP }, function()
 		tern.process.run({ "/usr/bin/open", "-g", APP }, function(res, cx2)

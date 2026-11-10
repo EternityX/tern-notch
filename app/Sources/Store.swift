@@ -197,9 +197,21 @@ final class Store: ObservableObject {
             let data = try JSONSerialization.data(withJSONObject: cmd)
             try data.write(to: tmp)
             try FileManager.default.moveItem(at: tmp, to: dst)
+            wake(dst.path)
         } catch {
             show(Toast(id: -1, level: "error", text: "Could not reach Tern: \(error.localizedDescription)"))
         }
+    }
+
+    private func wake(_ path: String) {
+        guard let cli = NSRunningApplication.runningApplications(withBundleIdentifier: ternBundleID).first?
+            .bundleURL?.appendingPathComponent("Contents/MacOS/tern") else { return }
+        let process = Process()
+        process.executableURL = cli
+        process.arguments = ["open", "--preview", path]
+        process.standardOutput = FileHandle.nullDevice
+        process.standardError = FileHandle.nullDevice
+        try? process.run()
     }
 }
 

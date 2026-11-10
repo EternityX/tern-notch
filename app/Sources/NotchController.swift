@@ -158,10 +158,13 @@ final class NotchController {
             .map { Set(($0?.agents ?? []).filter(\.needsInput).map(\.pane)) }
             .removeDuplicates()
             .scan((Set<Int>(), Set<Int>())) { last, now in (last.1, now) }
-            .sink { previous, now in
-                if Preferences.shared.soundOnAsk, !now.subtracting(previous).isEmpty {
-                    NSSound(named: "Glass")?.play()
-                }
+            .sink { [weak self] previous, now in
+                let fresh = now.subtracting(previous)
+                guard !fresh.isEmpty else { return }
+                if Preferences.shared.soundOnAsk { NSSound(named: "Glass")?.play() }
+                guard let self, !self.ui.holdOpen else { return }
+                let asking = self.store.agents.first { fresh.contains($0.pane) }
+                if let asking { withAnimation(Motion.content) { self.store.selectedPane = asking.pane } }
             }
             .store(in: &cancellables)
 
