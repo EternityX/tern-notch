@@ -11,6 +11,7 @@ final class Store: ObservableObject {
     @Published private(set) var workingSince: [Int: Date] = [:]
     @Published private(set) var pending: Set<String> = []
     @Published private(set) var catalog: Catalog?
+    @Published var drafts: [Int: String] = [:]
     @Published var newModel: String? = UserDefaults.standard.string(forKey: "newModel") {
         didSet { UserDefaults.standard.set(newModel, forKey: "newModel") }
     }
@@ -79,6 +80,8 @@ final class Store: ObservableObject {
         since = since.filter { panes.contains($0.key) }
         if since != workingSince { workingSince = since }
         if let selected = selectedPane, selected != Store.newAgent, !panes.contains(selected) { selectedPane = nil }
+        let stale = drafts.keys.filter { $0 != Store.newAgent && !panes.contains($0) }
+        if !stale.isEmpty { stale.forEach { drafts[$0] = nil } }
         if next.agents != state?.agents { pending = [] }
         if let t = next.toast, t.id != lastToastId {
             lastToastId = t.id

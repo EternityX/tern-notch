@@ -61,6 +61,7 @@ struct SettingsView: View {
             }
 
             Section("Panel") {
+                Toggle("Show usage limits at the bottom of the open notch", isOn: $prefs.usageInPanel)
                 Picker("Width", selection: $prefs.width) {
                     ForEach(Preferences.PanelWidth.allCases) { Text($0.title).tag($0) }
                 }

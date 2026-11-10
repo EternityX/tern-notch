@@ -56,11 +56,12 @@ final class Preferences: ObservableObject {
     @Published var glassDarkness: Double { didSet { defaults.set(glassDarkness, forKey: "glassDarkness") } }
     @Published var display: Display { didSet { defaults.set(display.rawValue, forKey: "display") } }
     @Published var overFullScreen: Bool { didSet { defaults.set(overFullScreen, forKey: "overFullScreen") } }
+    @Published var usageInPanel: Bool { didSet { defaults.set(usageInPanel, forKey: "usageInPanel") } }
 
     private init() {
         let d = UserDefaults.standard
         d.register(defaults: [
-            "openOn": OpenTrigger.hover.rawValue, "hoverDelay": 0.08, "closeDelay": 0.3, "haptics": true,
+            "openOn": OpenTrigger.hover.rawValue, "hoverDelay": 0.08, "closeDelay": 0.3, "haptics": true, "usageInPanel": false,
             "glance": Glance.context.rawValue, "shrinkWhenIdle": true, "blink": true, "soundOnAsk": false,
             "width": PanelWidth.regular.rawValue, "glassDarkness": 0.3, "display": Display.notch.rawValue,
             "overFullScreen": true,
@@ -77,5 +78,6 @@ final class Preferences: ObservableObject {
         glassDarkness = d.double(forKey: "glassDarkness")
         display = Display(rawValue: d.string(forKey: "display") ?? "") ?? .notch
         overFullScreen = d.bool(forKey: "overFullScreen")
+        usageInPanel = d.bool(forKey: "usageInPanel")
     }
 }

@@ -320,6 +320,9 @@ struct ExpandedView: View {
     private var footer: some View {
         VStack(alignment: .leading, spacing: Self.spacing) {
             Composer(store: store, ui: ui, agent: store.selected)
+            if Preferences.shared.usageInPanel, !store.quotas.isEmpty {
+                PanelUsage(quotas: store.quotas)
+            }
             if let toast = store.toast {
                 Label(toast.text, systemImage: toast.level == "error" ? "exclamationmark.triangle.fill" : "info.circle")
                     .font(.system(size: 11))
@@ -775,7 +778,11 @@ struct Composer: View {
     @ObservedObject var store: Store
     @ObservedObject var ui: NotchUI
     let agent: Agent?
-    @State private var text = ""
+    private var draftKey: Int { agent?.pane ?? Store.newAgent }
+    private var text: String {
+        get { store.drafts[draftKey] ?? "" }
+        nonmutating set { store.drafts[draftKey] = newValue.isEmpty ? nil : newValue }
+    }
     @State private var focused = false
     @State private var focusToken = 0
     @State private var highlight = 0
@@ -787,7 +794,7 @@ struct Composer: View {
             HStack(spacing: 8) {
                 Image(systemName: text.hasPrefix("/") ? "command" : (agent == nil ? "sparkles" : "text.bubble"))
                     .font(.system(size: 12)).foregroundStyle(Tone.muted)
-                CommandField(text: $text, placeholder: placeholder, focused: $focused,
+                CommandField(text: Binding(get: { text }, set: { text = $0 }), placeholder: placeholder, focused: $focused,
                              focusToken: focusToken, onCommand: handle)
                     .frame(height: 20)
                 Button(action: send) {
@@ -911,6 +918,33 @@ struct Composer: View {
             store.startAgent(trimmed)
         }
         text = ""
+    }
+}
+
+struct PanelUsage: View {
+    let quotas: [Quota]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            ForEach(quotas) { quota in
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(quota.label).font(.system(size: 11, weight: .medium)).lineLimit(1)
+                        Spacer(minLength: 6)
+                        if let resets = quota.resetsAt {
+                            TimelineView(.periodic(from: .now, by: 30)) { context in
+                                Text("resets in \(duration(until: resets / 1000, from: context.date))")
+                                    .font(.system(size: 10.5)).foregroundStyle(Tone.muted).lineLimit(1)
+                            }
+                        }
+                        Text(percent(quota.used)).font(.system(size: 11, weight: .semibold)).monospacedDigit()
+                    }
+                    Meter(value: quota.used, tint: Tone.meter(quota.used))
+                }
+            }
+        }
+        .padding(10)
+        .controlSurface(RoundedRectangle(cornerRadius: 12, style: .continuous), fill: Color.white.opacity(0.05))
     }
 }
 
